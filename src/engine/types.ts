@@ -5,12 +5,64 @@ export type QuestionType =
   | 'base-to-past'
   | 'past-to-base'
   | 'base-to-participle'
+  | 'ja-to-en'
+  | 'en-to-ja'
+  | 'cloze-en-to-ja'
+  | 'ing-classify'
+  | 'initial-type'
+  | 'pos-classify'
+  | 'word-order-classify'
+  | 'comp-obj-classify'
+  | 'phrase-clause-classify'
+  | 'conj-choice'
+  | 'linker-classify'
+  | 'count-classify'
+  | 'quant-choice'
+  | 'agree-choice'
 
-export type GameMode = 'standard' | 'participle' | 'hard'
+export type GameMode =
+  | 'standard'
+  | 'participle'
+  | 'hard'
+  | 'core'
+  | 'abb'
+  | 'aba'
+  | 'abc'
+  | 'vocab-ja-en'
+  | 'vocab-en-ja'
+  | 'cloze'
+  | 'phrases'
+  | 'ing-form'
+  | 'vocab-initials'
+  | 'vocab-initials-en'
+  | 'vocab-initials-cloze'
+  | 'vocab-initials-phrases'
+  | 'toeic-en-ja'
+  | 'toeic-ja-en'
+  | 'toeic-cloze'
+  | 'toeic-must-cloze'
+  | 'toeic-biz-cloze'
+  | 'pos-suffix'
+  | 'pos-word'
+  | 'word-order'
+  | 'comp-obj'
+  | 'phrase-clause'
+  | 'conj-prep'
+  | 'conj-part5'
+  | 'conj-linker'
+  | 'noun-count'
+  | 'noun-plural'
+  | 'noun-quant'
+  | 'noun-agree'
+  | 'prep-time'
+  | 'prep-place'
+  | 'prep-other'
+  | 'prep-set'
 
 export type Question = {
   id: string
-  verb: Verb
+  itemId: string
+  chip: string
   type: QuestionType
   prompt: string
   hint: string
@@ -18,6 +70,14 @@ export type Question = {
   acceptAnswers: string[]
   choices: string[]
   isRecovery: boolean
+  /** 太字表示する語（例: swimming） */
+  emphasis?: string
+  /** 補助訳など */
+  subtitle?: string
+  /** イニシャル穴埋め表示（f______） */
+  initialHint?: string
+  /** 注意書き */
+  note?: string
 }
 
 export type WordStats = {

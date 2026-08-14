@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { MomentumState, Question } from '../engine/types'
 import { ComboBurst } from './ComboBurst'
 
@@ -14,6 +14,25 @@ type Props = {
   onAnswer: (choice: string) => void
 }
 
+function renderPrompt(question: Question): ReactNode {
+  const { prompt, emphasis } = question
+  if (!emphasis) return prompt
+
+  const index = prompt.toLowerCase().indexOf(emphasis.toLowerCase())
+  if (index < 0) return prompt
+
+  const before = prompt.slice(0, index)
+  const match = prompt.slice(index, index + emphasis.length)
+  const after = prompt.slice(index + emphasis.length)
+  return (
+    <>
+      {before}
+      <strong className="ing-emphasis">{match}</strong>
+      {after}
+    </>
+  )
+}
+
 export function GameScreen({
   question,
   questionNumber,
@@ -26,16 +45,52 @@ export function GameScreen({
   onAnswer,
 }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
+  const [typed, setTyped] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setSelected(null)
-  }, [question.id])
+    setTyped('')
+    if (question.type === 'initial-type') {
+      window.setTimeout(() => inputRef.current?.focus(), 40)
+    }
+  }, [question.id, question.type])
 
   const handleChoice = (choice: string) => {
     if (feedback !== 'idle') return
     setSelected(choice)
     onAnswer(choice)
   }
+
+  const handleTypeSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (feedback !== 'idle') return
+    const value = typed.trim()
+    if (!value) return
+    setSelected(value)
+    onAnswer(value)
+  }
+
+  const sentenceLike =
+    question.type === 'cloze-en-to-ja' ||
+    question.type === 'ing-classify' ||
+    question.type === 'word-order-classify' ||
+    question.type === 'comp-obj-classify' ||
+    question.type === 'phrase-clause-classify' ||
+    question.type === 'conj-choice' ||
+    question.type === 'linker-classify' ||
+    (question.type === 'initial-type' && Boolean(question.subtitle))
+  const isTyping = question.type === 'initial-type'
+  const hideNoteUntilAnswer =
+    question.type === 'pos-classify' ||
+    question.type === 'word-order-classify' ||
+    question.type === 'comp-obj-classify' ||
+    question.type === 'phrase-clause-classify' ||
+    question.type === 'conj-choice' ||
+    question.type === 'linker-classify' ||
+    question.type === 'count-classify' ||
+    question.type === 'quant-choice' ||
+    question.type === 'agree-choice'
 
   return (
     <section
@@ -60,31 +115,92 @@ export function GameScreen({
 
       <div className={`prompt-area ${momentum.heat > 0.4 ? 'heat-on' : ''}`}>
         <div className="kind-chip">
-          {question.verb.kind === 'regular' ? 'Regular' : 'Irregular'}
+          {question.chip}
           {' · '}
           {question.hint}
         </div>
-        <h2 className="prompt-text">{question.prompt}</h2>
+        <h2 className={`prompt-text${sentenceLike ? ' prompt-sentence' : ''}`}>
+          {renderPrompt(question)}
+        </h2>
+        {question.initialHint && (
+          <p className="initial-hint" aria-label="イニシャルヒント">
+            {question.initialHint}
+          </p>
+        )}
+        {question.subtitle && (
+          <p className="prompt-subtitle">{question.subtitle}</p>
+        )}
+        {question.note &&
+          (!hideNoteUntilAnswer || feedback !== 'idle') && (
+            <p className="prompt-note">{question.note}</p>
+          )}
         {question.isRecovery && (
           <p className="recovery">挽回チャンス — さっきの語をもう一度</p>
+        )}
+        {feedback === 'wrong' && isTyping && (
+          <p className="answer-reveal">正解: {question.answer}</p>
         )}
         <ComboBurst label={tierFlash} burstKey={burstKey} />
       </div>
 
-      <div className="choices">
-        {question.choices.map((choice) => (
-          <button
-            key={`${question.id}-${choice}`}
-            type="button"
-            className="choice"
-            data-selected={selected === choice}
+      {isTyping ? (
+        <form className="type-form" onSubmit={handleTypeSubmit}>
+          <input
+            ref={inputRef}
+            className="type-input"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder={
+              question.hint.includes('英→日') ? '日本語で入力…' : '英語で入力…'
+            }
+            value={typed}
             disabled={feedback !== 'idle'}
-            onClick={() => handleChoice(choice)}
+            onChange={(e) => setTyped(e.target.value)}
+            data-selected={selected !== null}
+          />
+          <button
+            type="submit"
+            className="type-submit"
+            disabled={feedback !== 'idle' || !typed.trim()}
           >
-            {choice}
+            答える
           </button>
-        ))}
-      </div>
+        </form>
+      ) : (
+        <div
+          className={`choices${
+            question.type === 'ing-classify' ||
+            question.type === 'comp-obj-classify' ||
+            question.type === 'phrase-clause-classify' ||
+            question.type === 'count-classify' ||
+            question.type === 'agree-choice'
+              ? ' choices-binary'
+              : question.type === 'pos-classify' ||
+                  question.type === 'word-order-classify' ||
+                  question.type === 'conj-choice' ||
+                  question.type === 'linker-classify' ||
+                  question.type === 'quant-choice'
+                ? ' choices-pos'
+                : ''
+          }`}
+        >
+          {question.choices.map((choice) => (
+            <button
+              key={`${question.id}-${choice}`}
+              type="button"
+              className="choice"
+              data-selected={selected === choice}
+              disabled={feedback !== 'idle'}
+              onClick={() => handleChoice(choice)}
+            >
+              {choice}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="combo-rail">
         <div>

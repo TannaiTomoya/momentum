@@ -175,7 +175,7 @@ export function useGame() {
 
       const nextProgress = applyAnswerToProgress(
         progressRef.current,
-        q.verb.id,
+        q.itemId,
         ok,
         reactionMs,
       )
@@ -219,7 +219,7 @@ export function useGame() {
 
         if (!ok) {
           const recovery = createRecoveryQuestion(
-            q.verb,
+            q,
             modeRef.current,
             q.type,
           )
@@ -242,7 +242,7 @@ export function useGame() {
         questionStartedAt.current = Date.now()
         lockedRef.current = false
         setLocked(false)
-      }, ok ? 320 : 520)
+      }, ok ? 320 : q.type === 'initial-type' ? 1100 : 520)
     },
     [endRun, screen],
   )

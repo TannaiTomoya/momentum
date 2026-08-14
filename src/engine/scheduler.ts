@@ -1,5 +1,31 @@
-import { ALL_VERBS, type Verb } from '../data/words'
+import {
+  ALL_VERBS,
+  IRREGULAR_VERBS,
+  PATTERN_ABA_VERBS,
+  PATTERN_ABB_VERBS,
+  PATTERN_ABC_VERBS,
+  type Verb,
+} from '../data/words'
 import type { GameMode, Progress, QuestionType, WordStats } from './types'
+
+export function verbPoolForMode(mode: GameMode): Verb[] {
+  switch (mode) {
+    case 'core':
+      return IRREGULAR_VERBS
+    case 'abb':
+      return PATTERN_ABB_VERBS
+    case 'aba':
+      return PATTERN_ABA_VERBS
+    case 'abc':
+      return PATTERN_ABC_VERBS
+    default:
+      return ALL_VERBS
+  }
+}
+
+export function isPatternMode(mode: GameMode): boolean {
+  return mode === 'abb' || mode === 'aba' || mode === 'abc' || mode === 'core'
+}
 
 const DEFAULT_STATS: WordStats = {
   easiness: 2.5,
@@ -124,13 +150,58 @@ export function pickInterleavedVerbs(
   return picked
 }
 
+/** 指定プールから優先度順に抽出（少数語は循環して再利用） */
+export function pickFromVerbPool(
+  pool: Verb[],
+  progress: Progress,
+  count: number,
+  now = Date.now(),
+): Verb[] {
+  if (pool.length === 0) return []
+  const ranked = [...pool].sort(
+    (a, b) => priorityScore(b, progress, now) - priorityScore(a, progress, now),
+  )
+  if (ranked.length >= count) return ranked.slice(0, count)
+
+  const picked: Verb[] = []
+  while (picked.length < count) {
+    const cycle = picked.length > 0 && picked.length % ranked.length === 0
+      ? [...ranked].sort(() => Math.random() - 0.5)
+      : ranked
+    for (const verb of cycle) {
+      picked.push(verb)
+      if (picked.length >= count) break
+    }
+  }
+  return picked
+}
+
+/** 最重要不規則動詞 50 語のみから優先度順に抽出 */
+export function pickCoreIrregularVerbs(
+  progress: Progress,
+  count: number,
+  now = Date.now(),
+): Verb[] {
+  return pickFromVerbPool(IRREGULAR_VERBS, progress, count, now)
+}
+
 export function availableQuestionTypes(
   verb: Verb,
   mode: GameMode,
 ): QuestionType[] {
+  // 型ドリルは過去形／過去分詞の区別を重点的に
+  if (mode === 'abb' || mode === 'aba' || mode === 'abc') {
+    return [
+      'base-to-past',
+      'base-to-participle',
+      'past-to-base',
+      'meaning-to-base',
+    ]
+  }
+
   const types: QuestionType[] = ['meaning-to-base', 'base-to-past', 'past-to-base']
   if (
-    (mode === 'participle' || mode === 'hard') &&
+    (mode === 'participle' || mode === 'hard' || mode === 'core') &&
     verb.kind === 'irregular'
   ) {
     types.push('base-to-participle')

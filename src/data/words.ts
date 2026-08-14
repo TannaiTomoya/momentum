@@ -165,3 +165,45 @@ export const ALL_VERBS: Verb[] = [...REGULAR_VERBS, ...IRREGULAR_VERBS]
 export const VERB_BY_ID = Object.fromEntries(
   ALL_VERBS.map((verb) => [verb.id, verb]),
 ) as Record<string, Verb>
+
+function verbsByBase(bases: string[]): Verb[] {
+  return bases.map((base) => {
+    const verb = VERB_BY_ID[`i-${base}`]
+    if (!verb) throw new Error(`Missing irregular verb: ${base}`)
+    return verb
+  })
+}
+
+/** A-B-B型: 過去形＝過去分詞 */
+export const PATTERN_ABB_VERBS = verbsByBase([
+  'buy',
+  'bring',
+  'build',
+  'feel',
+  'find',
+  'have',
+  'keep',
+  'make',
+  'sell',
+  'send',
+  'teach',
+  'tell',
+])
+
+/** A-B-A型: 原形＝過去分詞 */
+export const PATTERN_ABA_VERBS = verbsByBase(['come', 'become', 'run'])
+
+/** A-B-C型: 原形・過去形・過去分詞がすべて異なる */
+export const PATTERN_ABC_VERBS = verbsByBase([
+  'begin',
+  'drink',
+  'drive',
+  'eat',
+  'give',
+  'go',
+  'know',
+  'see',
+  'speak',
+  'take',
+  'write',
+])
