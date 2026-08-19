@@ -1,12 +1,46 @@
+import { useMemo, useState, Fragment } from 'react'
+import { PulseListenBanner } from './PulseListenBanner'
+import { LyricListenBanner } from './LyricListenBanner'
 import {
   xpIntoCurrentLevel,
   xpToNextLevel,
 } from '../engine/progress'
+import { timeLimitForMode } from '../engine/session'
 import type { GameMode, Progress } from '../engine/types'
+import {
+  LAB_CATALOG,
+  LAB_GROUP_NOTE,
+  LAB_KIND_LABEL,
+  isLabUnlocked,
+  labLock,
+  labLockLabel,
+  type LabEntry,
+  type LabKind,
+  type LabStage,
+} from '../data/labCatalog'
 
 type Props = {
   progress: Progress
   onStart: (mode: GameMode) => void
+}
+
+type DurationFilter = 'all' | 'short' | 'long'
+
+function groupLabs(labs: LabEntry[]): { group: string; items: LabEntry[] }[] {
+  const order: string[] = []
+  const map = new Map<string, LabEntry[]>()
+  for (const lab of labs) {
+    const key = lab.group || '__solo'
+    if (!map.has(key)) {
+      map.set(key, [])
+      order.push(key)
+    }
+    map.get(key)?.push(lab)
+  }
+  return order.map((group) => ({
+    group: group === '__solo' ? '' : group,
+    items: map.get(group) ?? [],
+  }))
 }
 
 export function TitleScreen({ progress, onStart }: Props) {
@@ -17,12 +51,37 @@ export function TitleScreen({ progress, onStart }: Props) {
       ? 0
       : Math.round((progress.totalCorrect / progress.totalAnswered) * 100)
 
+  const [keyword, setKeyword] = useState('')
+  const [kind, setKind] = useState<LabKind | 'all'>('all')
+  const [unlockedOnly, setUnlockedOnly] = useState(false)
+  const [stage, setStage] = useState<LabStage | 'all'>('all')
+  const [duration, setDuration] = useState<DurationFilter>('all')
+
+  const filtered = useMemo(() => {
+    const q = keyword.trim().toLowerCase()
+    return LAB_CATALOG.filter((lab) => {
+      if (kind !== 'all' && lab.kind !== kind) return false
+      if (stage !== 'all' && lab.stage !== stage) return false
+      if (unlockedOnly && !isLabUnlocked(lab.mode, progress)) return false
+      const seconds = timeLimitForMode(lab.mode)
+      if (duration === 'short' && seconds > 90) return false
+      if (duration === 'long' && seconds <= 90) return false
+      if (!q) return true
+      const hay = `${lab.title} ${lab.blurb} ${lab.group} ${LAB_KIND_LABEL[lab.kind]}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [keyword, kind, unlockedOnly, stage, duration, progress])
+
+  const grouped = groupLabs(filtered)
+
   return (
     <section className="stage">
-      <h1 className="brand">MOMENTUM VERBS</h1>
+      <h1 className="brand">MOMENTUM</h1>
       <p className="tagline">
-        規則・不規則を混ぜて想起し、コンボで加速する動詞ラッシュ。
+        Verbs・文法・タグ・Pulse・Lyric。検索して、コンボで加速するラボ。
       </p>
+      <PulseListenBanner />
+      <LyricListenBanner />
 
       <div className="meta-row">
         <span>
@@ -42,372 +101,169 @@ export function TitleScreen({ progress, onStart }: Props) {
         </span>
       </div>
 
+      <div className="lab-search">
+        <label className="lab-search-field">
+          キーワード
+          <input
+            type="search"
+            value={keyword}
+            placeholder="kick / because / 前置詞"
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+        </label>
+        <label className="lab-search-field">
+          種類
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value as LabKind | 'all')}
+          >
+            <option value="all">すべて</option>
+            {(Object.keys(LAB_KIND_LABEL) as LabKind[]).map((key) => (
+              <option key={key} value={key}>
+                {LAB_KIND_LABEL[key]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="lab-detail">
+        <p className="lab-detail-title">詳細検索</p>
+        <label className="lab-detail-check">
+          <input
+            type="checkbox"
+            checked={unlockedOnly}
+            onChange={(event) => setUnlockedOnly(event.target.checked)}
+          />
+          解放済みのみ
+        </label>
+        <label className="lab-detail-field">
+          ステージ
+          <select
+            value={stage}
+            onChange={(event) => setStage(event.target.value as LabStage | 'all')}
+          >
+            <option value="all">すべて</option>
+            <option value="meaning">Meaning</option>
+            <option value="syntax">Syntax</option>
+            <option value="build">Build</option>
+            <option value="grammar">Grammar</option>
+            <option value="toeic">TOEIC対策</option>
+          </select>
+        </label>
+        <label className="lab-detail-field">
+          制限時間
+          <select
+            value={duration}
+            onChange={(event) =>
+              setDuration(event.target.value as DurationFilter)
+            }
+          >
+            <option value="all">すべて</option>
+            <option value="short">短い（90秒以下）</option>
+            <option value="long">長い（91秒以上）</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="lab-table-wrap">
+        <table className="lab-table">
+          <thead>
+            <tr>
+              <th>種類</th>
+              <th>名前</th>
+              <th>内容</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={4}>該当するラボはない</td>
+              </tr>
+            )}
+            {filtered.map((lab) => {
+              const lock = labLock(lab.mode)
+              const unlocked = isLabUnlocked(lab.mode, progress)
+              return (
+                <tr key={lab.mode}>
+                  <td>{LAB_KIND_LABEL[lab.kind]}</td>
+                  <td>{lab.group ? `${lab.group} / ${lab.title}` : lab.title}</td>
+                  <td>{lab.blurb}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="type-submit"
+                      disabled={!unlocked}
+                      onClick={() => onStart(lab.mode)}
+                    >
+                      {unlocked ? '開始' : lock ? labLockLabel(lock) : '開始'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
       <div className="mode-list">
-        <button className="mode-btn" type="button" onClick={() => onStart('standard')}>
-          <h2>Momentum Rush</h2>
-          <p>意味・原形・過去形をインターリーブ。連続正解で倍率が跳ねる。</p>
-        </button>
-
-        <button className="mode-btn" type="button" onClick={() => onStart('core')}>
-          <h2>Core Irregular 50</h2>
-          <p>
-            最重要の不規則動詞 50 語だけをランダム出題。原形・過去形・過去分詞まで定着させる。
-          </p>
-        </button>
-
-        <div className="mode-group">
-          <h3 className="mode-group-title">型別ドリル</h3>
-          <p className="mode-group-note">変化パターンごとに分けて定着させる。</p>
-          <div className="mode-list nested">
-            <button className="mode-btn" type="button" onClick={() => onStart('abb')}>
-              <h2>A-B-B 型</h2>
-              <p>過去形＝過去分詞（buy → bought → bought など 12 語）</p>
-            </button>
-            <button className="mode-btn" type="button" onClick={() => onStart('aba')}>
-              <h2>A-B-A 型</h2>
-              <p>原形＝過去分詞（come → came → come など 3 語）</p>
-            </button>
-            <button className="mode-btn" type="button" onClick={() => onStart('abc')}>
-              <h2>A-B-C 型</h2>
-              <p>3 形すべて異なる（begin → began → begun など 11 語）</p>
-            </button>
-          </div>
-        </div>
-
-        <div className="mode-group">
-          <h3 className="mode-group-title">文法ドリル</h3>
-          <p className="mode-group-note">
-            be動詞+ing なら進行形、名詞の働きなら動名詞。接尾辞で品詞を推測。
-          </p>
-          <div className="mode-list nested">
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('ing-form')}
-            >
-              <h2>現在進行形 vs 動名詞</h2>
-              <p>
-                太字の -ing が「〜している」か「〜すること」かを判別（20問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('pos-suffix')}
-            >
-              <h2>接尾辞 → 品詞</h2>
-              <p>
-                -ment / -ize / -ive / -ly などが名詞・動詞・形容詞・副詞のどれかを仕分け。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('pos-word')}
-            >
-              <h2>単語 → 品詞</h2>
-              <p>
-                effective / discussion / identify など 10 語の品詞を判別。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('word-order')}
-            >
-              <h2>英文の語順</h2>
-              <p>
-                S+be+補語 / S+一般動詞(+目的語) の4パターンを判別（16問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('comp-obj')}
-            >
-              <h2>補語 vs 目的語</h2>
-              <p>
-                太字が主語を補う補語か、動作の対象の目的語かを判別（8問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('phrase-clause')}
-            >
-              <h2>句 vs 節</h2>
-              <p>
-                太字部分に主語＋本動詞があるかで句と節を判別（10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('conj-prep')}
-            >
-              <h2>接続詞 vs 前置詞</h2>
-              <p>
-                Because / Despite / While など、後ろが節か句かで選ぶ（8問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('conj-linker')}
-            >
-              <h2>等位・従位・接続副詞</h2>
-              <p>
-                so / because / however などのつなぎ方の違いを判別（8問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('conj-part5')}
-            >
-              <h2>接続詞 Part5</h2>
-              <p>
-                either…or / unless / whether など TOEIC 形式の空所補充（10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('noun-count')}
-            >
-              <h2>可算 / 不可算</h2>
-              <p>
-                information / furniture / passenger などを判別（10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('noun-plural')}
-            >
-              <h2>複数形入力</h2>
-              <p>
-                woman → women など、規則・不規則の複数形をタイピング（10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('noun-quant')}
-            >
-              <h2>数量形容詞</h2>
-              <p>
-                many / much / a few / each など、合う名詞を選ぶ（10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('noun-agree')}
-            >
-              <h2>主語と動詞の一致</h2>
-              <p>
-                furniture is / cars are など、is / are を選ぶ（8問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('prep-time')}
-            >
-              <h2>前置詞（時）</h2>
-              <p>
-                at / on / in / for / until / by など時の前置詞（15問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('prep-place')}
-            >
-              <h2>前置詞（場所）</h2>
-              <p>
-                at / in / by / behind / along など場所の前置詞（12問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('prep-other')}
-            >
-              <h2>前置詞（その他）</h2>
-              <p>
-                under construction / as / without / regarding など（8問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('prep-set')}
-            >
-              <h2>前置詞（セット表現）</h2>
-              <p>
-                subscribe to / within / owing to / eligible for など（8問）。
-              </p>
-            </button>
-          </div>
-        </div>
-
-        <div className="mode-group">
-          <h3 className="mode-group-title">ビジネス英単語</h3>
-          <p className="mode-group-note">
-            freezer / service request / be eligible for などを集中練習。
-          </p>
-          <div className="mode-list nested">
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-ja-en')}
-            >
-              <h2>単語テスト① 日本語 → 英語</h2>
-              <p>冷凍庫・売り場・修理依頼など 20 語を想起。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-initials')}
-            >
-              <h2>イニシャル入力① 日→英</h2>
-              <p>
-                日本語を見て f______ 形式のヒントから英語をタイピング（20問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-en-ja')}
-            >
-              <h2>単語テスト② 英語 → 日本語</h2>
-              <p>freezer / section / manager など 10 語。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-initials-en')}
-            >
-              <h2>イニシャル入力② 英→日</h2>
-              <p>
-                freezer などを見て 冷＿＿ 形式のヒントから日本語をタイピング（10問）。
-              </p>
-            </button>
-            <button className="mode-btn" type="button" onClick={() => onStart('cloze')}>
-              <h2>穴埋め 英文 → 日本語</h2>
-              <p>The freezer isn't working properly. など 10 文。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-initials-cloze')}
-            >
-              <h2>イニシャル入力③ 穴埋め</h2>
-              <p>
-                英文の空欄を p_______ ヒント付きでタイピング（ちょっと難しい・10問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('phrases')}
-            >
-              <h2>重要表現ドリル</h2>
-              <p>
-                be eligible for / submit A to B / be located near などを重点出題。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('vocab-initials-phrases')}
-            >
-              <h2>イニシャル入力④ TOEICフレーズ</h2>
-              <p>
-                英語フレーズを見て 座＿＿＿＿＿ ヒント付きで日本語をタイピング（20問）。
-              </p>
-            </button>
-          </div>
-        </div>
-
-        <div className="mode-group">
-          <h3 className="mode-group-title">TOEIC 写真描写</h3>
-          <p className="mode-group-note">
-            wipe down / patio / sidewalk café など、写真描写で頻出の語を集中練習。
-          </p>
-          <div className="mode-list nested">
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('toeic-en-ja')}
-            >
-              <h2>TOEIC単語① 英→日</h2>
-              <p>wipe down / outdoor / patio など 12 語を日本語で入力。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('toeic-ja-en')}
-            >
-              <h2>TOEIC単語② 日→英</h2>
-              <p>「～をきれいに拭く」などを英語でタイピング（12問）。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('toeic-cloze')}
-            >
-              <h2>TOEIC穴埋め</h2>
-              <p>wiping / sweeping / in front など空欄を入力（6問）。</p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('toeic-must-cloze')}
-            >
-              <h2>単語テスト① 文章穴埋め</h2>
-              <p>
-                TOEIC超必須。extinguisher / appointment / ensure などを英文穴埋めで想起（20問）。
-              </p>
-            </button>
-            <button
-              className="mode-btn"
-              type="button"
-              onClick={() => onStart('toeic-biz-cloze')}
-            >
-              <h2>FOR BIZ Unit1・2 穴埋め</h2>
-              <p>
-                inspecting / filing / assembling など超頻出語を英文穴埋めで入力（30問）。
-              </p>
-            </button>
-          </div>
-        </div>
-
-        <button
-          className="mode-btn"
-          type="button"
-          disabled={!progress.unlocked.participle}
-          onClick={() => onStart('participle')}
-        >
-          <h2>Participle Mix</h2>
-          <p>過去分詞を混ぜた検索練習。不規則動詞の定着を狙う。</p>
-          {!progress.unlocked.participle && (
-            <div className="lock">Lv.2 で解放</div>
-          )}
-        </button>
-
-        <button
-          className="mode-btn"
-          type="button"
-          disabled={!progress.unlocked.hard}
-          onClick={() => onStart('hard')}
-        >
-          <h2>Hard Rush</h2>
-          <p>短時間・多問数。モメンタムを落とさず駆け抜けろ。</p>
-          {!progress.unlocked.hard && <div className="lock">Lv.3 で解放</div>}
-        </button>
+        {grouped.map(({ group, items }) => {
+          if (!group) {
+            return (
+              <Fragment key={items.map((lab) => lab.mode).join('-')}>
+                {items.map((lab) => {
+                  const lock = labLock(lab.mode)
+                  const unlocked = isLabUnlocked(lab.mode, progress)
+                  return (
+                    <button
+                      key={lab.mode}
+                      className="mode-btn"
+                      type="button"
+                      disabled={!unlocked}
+                      onClick={() => onStart(lab.mode)}
+                    >
+                      <h2>{lab.title}</h2>
+                      <p>{lab.blurb}</p>
+                      {!unlocked && lock && (
+                        <div className="lock">{labLockLabel(lock)}</div>
+                      )}
+                    </button>
+                  )
+                })}
+              </Fragment>
+            )
+          }
+          return (
+            <div className="mode-group" key={group}>
+              <h3 className="mode-group-title">{group}</h3>
+              {LAB_GROUP_NOTE[group] && (
+                <p className="mode-group-note">{LAB_GROUP_NOTE[group]}</p>
+              )}
+              <div className="mode-list nested">
+                {items.map((lab) => {
+                  const lock = labLock(lab.mode)
+                  const unlocked = isLabUnlocked(lab.mode, progress)
+                  return (
+                    <button
+                      key={lab.mode}
+                      className="mode-btn"
+                      type="button"
+                      disabled={!unlocked}
+                      onClick={() => onStart(lab.mode)}
+                    >
+                      <h2>{lab.title}</h2>
+                      <p>{lab.blurb}</p>
+                      {!unlocked && lock && (
+                        <div className="lock">{labLockLabel(lock)}</div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <p className="science-note">

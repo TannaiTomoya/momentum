@@ -7,7 +7,10 @@ import {
   verbPoolForMode,
   weakVerbIds,
 } from './scheduler'
-import type { GameMode, Progress, Question, QuestionType } from './types'
+import { isIfLabAnswerCorrect } from './ifLabSession'
+import { isTagLabAnswerCorrect } from './tagLabSession'
+import { isPulseAnswerCorrect } from './pulse/session'
+import { isLyricAnswerCorrect } from './lyric/session'
 import {
   buildVocabSession,
   createVocabRecoveryQuestion,
@@ -15,6 +18,7 @@ import {
   vocabQuestionCount,
   vocabTimeLimit,
 } from './vocabSession'
+import type { GameMode, Progress, Question, QuestionType } from './types'
 
 function shuffle<T>(items: T[]): T[] {
   const arr = [...items]
@@ -212,6 +216,18 @@ function normalizeAnswer(value: string): string {
 }
 
 export function isAnswerCorrect(question: Question, choice: string): boolean {
+  if (question.type === 'if-lab') {
+    return isIfLabAnswerCorrect(question, choice)
+  }
+  if (question.type === 'tag-lab') {
+    return isTagLabAnswerCorrect(question, choice)
+  }
+  if (question.type === 'pulse') {
+    return isPulseAnswerCorrect(question, choice)
+  }
+  if (question.type === 'lyric') {
+    return isLyricAnswerCorrect(question, choice)
+  }
   const normalized = normalizeAnswer(choice)
   return question.acceptAnswers.some((a) => normalizeAnswer(a) === normalized)
 }

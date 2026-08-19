@@ -36,6 +36,10 @@ function tone(
   osc.stop(now + duration + 0.02)
 }
 
+export function getAudioContext(): AudioContext | null {
+  return getCtx()
+}
+
 export async function unlockAudio() {
   const audio = getCtx()
   if (audio?.state === 'suspended') await audio.resume()

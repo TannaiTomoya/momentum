@@ -1,4 +1,4 @@
-import type { Progress, RunResult, WordStats } from './types'
+import type { GameMode, Progress, RunResult, WordStats } from './types'
 import { updateWordStats } from './scheduler'
 
 const STORAGE_KEY = 'verb-momentum-progress-v1'
@@ -14,6 +14,8 @@ const DEFAULT_PROGRESS: Progress = {
   unlocked: {
     participle: false,
     hard: false,
+    pulseSyntax: false,
+    pulseBuild: false,
   },
 }
 
@@ -90,6 +92,7 @@ export function applyAnswerToProgress(
 
 export function finalizeRun(
   progress: Progress,
+  mode: GameMode,
   score: number,
   correct: number,
   answered: number,
@@ -103,6 +106,11 @@ export function finalizeRun(
 
   const unlockedParticiple = newLevel >= 2 || progress.unlocked.participle
   const unlockedHard = newLevel >= 3 || progress.unlocked.hard
+  const passed = answered > 0 && accuracy >= 0.6
+  const unlockedPulseSyntax =
+    progress.unlocked.pulseSyntax || (mode === 'pulse-meaning' && passed)
+  const unlockedPulseBuild =
+    progress.unlocked.pulseBuild || (mode === 'pulse-syntax' && passed)
 
   const next: Progress = {
     ...progress,
@@ -113,6 +121,8 @@ export function finalizeRun(
     unlocked: {
       participle: unlockedParticiple,
       hard: unlockedHard,
+      pulseSyntax: unlockedPulseSyntax,
+      pulseBuild: unlockedPulseBuild,
     },
   }
 
@@ -131,6 +141,10 @@ export function finalizeRun(
       unlockedParticiple:
         unlockedParticiple && !progress.unlocked.participle,
       unlockedHard: unlockedHard && !progress.unlocked.hard,
+      unlockedPulseSyntax:
+        unlockedPulseSyntax && !progress.unlocked.pulseSyntax,
+      unlockedPulseBuild:
+        unlockedPulseBuild && !progress.unlocked.pulseBuild,
     },
   }
 }

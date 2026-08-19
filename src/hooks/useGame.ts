@@ -24,13 +24,24 @@ import {
   isAnswerCorrect,
   timeLimitForMode,
 } from '../engine/session'
+import { stringifyPulseTrack } from '../engine/pulse/session'
+import { stringifyLyricTrack } from '../engine/lyric/session'
 import type {
   GameMode,
+  LyricClip,
   MomentumState,
   Progress,
+  PulseClip,
   Question,
+  ReviewItem,
   RunResult,
 } from '../engine/types'
+
+function clipText(value: string, max = 80): string {
+  const text = value.replace(/\s+/g, ' ').trim()
+  if (text.length <= max) return text
+  return `${text.slice(0, max)}…`
+}
 
 export type Screen = 'title' | 'playing' | 'result'
 
@@ -62,6 +73,9 @@ export function useGame() {
   const indexRef = useRef(0)
   const modeRef = useRef<GameMode>('standard')
   const lockedRef = useRef(false)
+  const pulseClipsRef = useRef<PulseClip[]>([])
+  const lyricClipsRef = useRef<LyricClip[]>([])
+  const reviewRef = useRef<ReviewItem[]>([])
 
   useEffect(() => {
     progressRef.current = progress
@@ -99,18 +113,40 @@ export function useGame() {
     const stats = runStatsRef.current
     const { progress: next, result: runResult } = finalizeRun(
       progressRef.current,
+      modeRef.current,
       stats.momentum.score,
       stats.correct,
       stats.answered,
       stats.momentum.bestCombo,
     )
+    const pulseClips = pulseClipsRef.current
+    const lyricClips = lyricClipsRef.current
+    const review = reviewRef.current
     setProgress(next)
-    setResult(runResult)
+    setResult({
+      ...runResult,
+      review,
+      ...(pulseClips.length > 0
+        ? {
+            pulseClips,
+            pulseCode: stringifyPulseTrack(pulseClips),
+            pulseBpm: pulseClips[0].bpm,
+          }
+        : {}),
+      ...(lyricClips.length > 0
+        ? {
+            lyricClips,
+            lyricCode: stringifyLyricTrack(lyricClips),
+          }
+        : {}),
+    })
     setScreen('result')
     if (
       runResult.leveledUp ||
       runResult.unlockedParticiple ||
-      runResult.unlockedHard
+      runResult.unlockedHard ||
+      runResult.unlockedPulseSyntax ||
+      runResult.unlockedPulseBuild
     ) {
       playLevelUp()
     }
@@ -133,6 +169,14 @@ export function useGame() {
   }, [screen, endRun])
 
   const startRun = useCallback(async (nextMode: GameMode) => {
+    if (
+      (nextMode === 'pulse-syntax' &&
+        !progressRef.current.unlocked.pulseSyntax) ||
+      (nextMode === 'pulse-build' &&
+        !progressRef.current.unlocked.pulseBuild)
+    ) {
+      return
+    }
     await unlockAudio()
     endingRef.current = false
     const session = buildSession(progressRef.current, nextMode)
@@ -154,6 +198,9 @@ export function useGame() {
     setLocked(false)
     lockedRef.current = false
     questionStartedAt.current = Date.now()
+    pulseClipsRef.current = []
+    lyricClipsRef.current = []
+    reviewRef.current = []
     setScreen('playing')
   }, [])
 
@@ -179,6 +226,39 @@ export function useGame() {
         ok,
         reactionMs,
       )
+
+      if (ok && q.type === 'pulse' && q.pulse) {
+        pulseClipsRef.current = [
+          ...pulseClipsRef.current,
+          {
+            code: choice,
+            bpm: q.pulse.bpm,
+            genre: q.pulse.genre,
+            kind: q.pulse.kind,
+          },
+        ]
+      }
+      reviewRef.current = [
+        ...reviewRef.current,
+        {
+          prompt: clipText(q.prompt),
+          answer: clipText(q.answer),
+          given: clipText(choice),
+          ok,
+        },
+      ]
+
+      if (ok && q.type === 'lyric' && q.lyric) {
+        lyricClipsRef.current = [
+          ...lyricClipsRef.current,
+          {
+            code: choice,
+            bpm: q.lyric.bpm,
+            word: q.lyric.word,
+            ride: q.lyric.ride,
+          },
+        ]
+      }
 
       if (ok) {
         nextCorrect += 1
@@ -242,7 +322,15 @@ export function useGame() {
         questionStartedAt.current = Date.now()
         lockedRef.current = false
         setLocked(false)
-      }, ok ? 320 : q.type === 'initial-type' ? 1100 : 520)
+      }, ok
+        ? 320
+        : q.type === 'pulse' || q.type === 'lyric'
+          ? 1400
+          : q.type === 'initial-type' ||
+              q.type === 'if-lab' ||
+              q.type === 'tag-lab'
+            ? 1100
+            : 520)
     },
     [endRun, screen],
   )

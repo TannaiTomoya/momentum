@@ -77,6 +77,34 @@ import {
   type PhraseCard,
   type VocabCard,
 } from '../data/vocab'
+import {
+  isIfLabMode,
+  ifLabQuestionCount,
+  ifLabTimeLimit,
+  buildIfLabSession,
+  createIfLabRecoveryQuestion,
+} from './ifLabSession'
+import {
+  isTagLabMode,
+  tagLabQuestionCount,
+  tagLabTimeLimit,
+  buildTagLabSession,
+  createTagLabRecoveryQuestion,
+} from './tagLabSession'
+import {
+  isPulseMode,
+  pulseQuestionCount,
+  pulseTimeLimit,
+  buildPulseSession,
+  createPulseRecoveryQuestion,
+} from './pulse/session'
+import {
+  isLyricMode,
+  lyricQuestionCount,
+  lyricTimeLimit,
+  buildLyricSession,
+  createLyricRecoveryQuestion,
+} from './lyric/session'
 import type { GameMode, Progress, Question, QuestionType } from './types'
 import { getWordStats } from './scheduler'
 
@@ -536,7 +564,11 @@ export function isVocabMode(mode: GameMode): boolean {
     mode === 'prep-time' ||
     mode === 'prep-place' ||
     mode === 'prep-other' ||
-    mode === 'prep-set'
+    mode === 'prep-set' ||
+    isIfLabMode(mode) ||
+    isTagLabMode(mode) ||
+    isPulseMode(mode) ||
+    isLyricMode(mode)
   )
 }
 
@@ -588,11 +620,22 @@ export function vocabQuestionCount(mode: GameMode): number {
   ) {
     return 10
   }
+  if (isLyricMode(mode)) return lyricQuestionCount(mode)
+  if (isPulseMode(mode)) return pulseQuestionCount(mode)
+  if (isTagLabMode(mode)) return tagLabQuestionCount(mode)
+  if (mode === 'if-build') return ifLabQuestionCount(mode)
+  if (mode === 'if-meaning' || mode === 'if-syntax') {
+    return ifLabQuestionCount(mode)
+  }
   if (mode === 'phrases') return 16
   return 12
 }
 
 export function vocabTimeLimit(mode: GameMode): number {
+  if (isLyricMode(mode)) return lyricTimeLimit(mode)
+  if (isPulseMode(mode)) return pulseTimeLimit(mode)
+  if (isTagLabMode(mode)) return tagLabTimeLimit(mode)
+  if (isIfLabMode(mode)) return ifLabTimeLimit(mode)
   if (mode === 'vocab-initials' || mode === 'vocab-initials-phrases') return 120
   if (mode === 'vocab-initials-cloze' || mode === 'toeic-ja-en') return 110
   if (
@@ -631,6 +674,10 @@ export function buildVocabSession(
   progress: Progress,
   mode: GameMode,
 ): Question[] {
+  if (isLyricMode(mode)) return buildLyricSession(progress, mode)
+  if (isIfLabMode(mode)) return buildIfLabSession(progress, mode)
+  if (isTagLabMode(mode)) return buildTagLabSession(progress, mode)
+  if (isPulseMode(mode)) return buildPulseSession(progress, mode)
   if (mode === 'vocab-ja-en') {
     return pickCards(VOCAB_CARDS, progress, vocabQuestionCount(mode)).map((card) =>
       jaToEnQuestion(card),
@@ -839,6 +886,18 @@ export function buildVocabSession(
 }
 
 export function createVocabRecoveryQuestion(question: Question): Question {
+  if (question.type === 'lyric') {
+    return createLyricRecoveryQuestion(question)
+  }
+  if (question.type === 'if-lab') {
+    return createIfLabRecoveryQuestion(question)
+  }
+  if (question.type === 'tag-lab') {
+    return createTagLabRecoveryQuestion(question)
+  }
+  if (question.type === 'pulse') {
+    return createPulseRecoveryQuestion(question)
+  }
   if (question.type === 'ing-classify') {
     const card = ING_CARDS.find((c) => c.id === question.itemId)
     if (card) return ingQuestion(card, true)

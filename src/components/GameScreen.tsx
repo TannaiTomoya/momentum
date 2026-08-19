@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { MomentumState, Question } from '../engine/types'
 import { ComboBurst } from './ComboBurst'
+import { IfLabPreview } from './IfLabPreview'
+import { TagLabPreview } from './TagLabPreview'
 
 type Props = {
   question: Question
@@ -51,7 +53,11 @@ export function GameScreen({
   useEffect(() => {
     setSelected(null)
     setTyped('')
-    if (question.type === 'initial-type') {
+    if (
+      question.type === 'initial-type' ||
+      question.type === 'if-lab' ||
+      question.type === 'tag-lab'
+    ) {
       window.setTimeout(() => inputRef.current?.focus(), 40)
     }
   }, [question.id, question.type])
@@ -79,8 +85,13 @@ export function GameScreen({
     question.type === 'phrase-clause-classify' ||
     question.type === 'conj-choice' ||
     question.type === 'linker-classify' ||
-    (question.type === 'initial-type' && Boolean(question.subtitle))
-  const isTyping = question.type === 'initial-type'
+    (question.type === 'initial-type' && Boolean(question.subtitle)) ||
+    question.type === 'if-lab' ||
+    question.type === 'tag-lab'
+  const isTyping =
+    question.type === 'initial-type' ||
+    question.type === 'if-lab' ||
+    question.type === 'tag-lab'
   const hideNoteUntilAnswer =
     question.type === 'pos-classify' ||
     question.type === 'word-order-classify' ||
@@ -130,6 +141,12 @@ export function GameScreen({
         {question.subtitle && (
           <p className="prompt-subtitle">{question.subtitle}</p>
         )}
+        {question.ifLab && (
+          <IfLabPreview spec={question.ifLab} typed={typed} />
+        )}
+        {question.tagLab && (
+          <TagLabPreview spec={question.tagLab} typed={typed} />
+        )}
         {question.note &&
           (!hideNoteUntilAnswer || feedback !== 'idle') && (
             <p className="prompt-note">{question.note}</p>
@@ -154,7 +171,21 @@ export function GameScreen({
             autoCorrect="off"
             spellCheck={false}
             placeholder={
-              question.hint.includes('英→日') ? '日本語で入力…' : '英語で入力…'
+              question.type === 'if-lab'
+                ? question.ifLab?.stage === 'syntax'
+                  ? '<  ===  && …'
+                  : question.ifLab?.stage === 'build'
+                    ? 'age < 16'
+                    : 'less than / equal to …'
+                : question.type === 'tag-lab'
+                  ? question.tagLab?.stage === 'syntax'
+                    ? 'tr  /  display: flex …'
+                    : question.tagLab?.stage === 'build'
+                      ? 'footer'
+                      : 'header / table row …'
+                  : question.hint.includes('英→日')
+                    ? '日本語で入力…'
+                    : '英語で入力…'
             }
             value={typed}
             disabled={feedback !== 'idle'}
