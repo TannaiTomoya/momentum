@@ -54,6 +54,10 @@ import {
   type PrepCard,
 } from '../data/prepositions'
 import {
+  HTML_CSS_QUIZ_CARDS,
+  JS_BASICS_QUIZ_CARDS,
+} from '../data/webBasics'
+import {
   INITIAL_CARDS,
   INITIAL_CLOZE_CARDS,
   INITIAL_EN_JA_CARDS,
@@ -355,13 +359,18 @@ function phraseClauseQuestion(
   )
 }
 
-function conjChoiceQuestion(card: ChoiceCard, isRecovery = false): Question {
+function conjChoiceQuestion(
+  card: ChoiceCard,
+  isRecovery = false,
+  chip = 'Conjunction',
+  hint = '接続詞問題',
+): Question {
   return makeQuestion(
     card.id,
     'conj-choice',
-    'Conjunction',
+    chip,
     card.prompt,
-    '接続詞問題',
+    hint,
     card.answer,
     [card.answer],
     shuffle(card.choices),
@@ -565,6 +574,8 @@ export function isVocabMode(mode: GameMode): boolean {
     mode === 'prep-place' ||
     mode === 'prep-other' ||
     mode === 'prep-set' ||
+    mode === 'html-css-quiz' ||
+    mode === 'js-basics-quiz' ||
     isIfLabMode(mode) ||
     isTagLabMode(mode) ||
     isPulseMode(mode) ||
@@ -612,6 +623,8 @@ export function vocabQuestionCount(mode: GameMode): number {
   }
   if (mode === 'prep-time') return 15
   if (mode === 'prep-other' || mode === 'prep-set') return 8
+  if (mode === 'html-css-quiz') return 12
+  if (mode === 'js-basics-quiz') return 20
   if (
     mode === 'vocab-en-ja' ||
     mode === 'vocab-initials-en' ||
@@ -660,6 +673,8 @@ export function vocabTimeLimit(mode: GameMode): number {
   if (mode === 'noun-plural' || mode === 'prep-time') return 90
   if (mode === 'prep-place') return 85
   if (mode === 'prep-other' || mode === 'prep-set') return 75
+  if (mode === 'html-css-quiz') return 90
+  if (mode === 'js-basics-quiz') return 120
   if (mode === 'toeic-en-ja') return 90
   if (mode === 'toeic-cloze') return 70
   if (mode === 'toeic-must-cloze') return 140
@@ -868,6 +883,26 @@ export function buildVocabSession(
     )
   }
 
+  if (mode === 'html-css-quiz') {
+    return pickCards(
+      HTML_CSS_QUIZ_CARDS,
+      progress,
+      vocabQuestionCount(mode),
+    ).map((card) =>
+      conjChoiceQuestion(card, false, 'HTML/CSS', '判別ドリル'),
+    )
+  }
+
+  if (mode === 'js-basics-quiz') {
+    return pickCards(
+      JS_BASICS_QUIZ_CARDS,
+      progress,
+      vocabQuestionCount(mode),
+    ).map((card) =>
+      conjChoiceQuestion(card, false, 'JavaScript', '基礎ドリル'),
+    )
+  }
+
   // phrases: prioritize must-know, mix directions
   const priority = PHRASE_CARDS.filter((c) => c.priority)
   const rest = PHRASE_CARDS.filter((c) => !c.priority)
@@ -937,6 +972,15 @@ export function createVocabRecoveryQuestion(question: Question): Question {
       CONJ_PREP_CARDS.find((c) => c.id === question.itemId) ??
       CONJ_PART5_CARDS.find((c) => c.id === question.itemId)
     if (card) return conjChoiceQuestion(card, true)
+
+    const htmlCard = HTML_CSS_QUIZ_CARDS.find((c) => c.id === question.itemId)
+    if (htmlCard) {
+      return conjChoiceQuestion(htmlCard, true, 'HTML/CSS', '判別ドリル')
+    }
+    const jsCard = JS_BASICS_QUIZ_CARDS.find((c) => c.id === question.itemId)
+    if (jsCard) {
+      return conjChoiceQuestion(jsCard, true, 'JavaScript', '基礎ドリル')
+    }
   }
 
   if (question.type === 'linker-classify') {

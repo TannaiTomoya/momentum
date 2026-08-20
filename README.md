@@ -32,6 +32,7 @@
 - **語彙**: ビジネス英単語・写真描写語彙・フレーズ・イニシャル入力
 - **文章穴埋め**: TOEIC超必須 / FOR BIZ Unit1・2（英文空欄に英語を入力）
 - **文法**: 品詞（接尾辞）、語順、補語/目的語、句/節、接続詞、可算・不可算、数量形容詞、前置詞
+- **Web基礎**: HTML/CSS 判別、JavaScript 基礎（変数〜DOM）
 
 「動詞アプリ」「文法アプリ」「単語帳」を行き来せず、**本番で混ざる論点を同じ UI・同じモメンタム体験で練習**できます。
 
@@ -121,6 +122,13 @@ npm run deploy       # build + pages deploy
 | 主語と動詞の一致 | is / are を選択 |
 | 前置詞（時・場所・その他・セット） | at/on/in、behind、subscribe to など |
 
+### Web基礎ドリル
+
+| モード | 内容 |
+|--------|------|
+| HTML/CSS 判別 | margin / padding / flex / colspan / form など（12問） |
+| JavaScript 基礎 | let・const・if・for・配列・関数・DOM・FizzBuzz（20問） |
+
 ### ビジネス英単語
 
 | モード | 内容 |
@@ -163,6 +171,7 @@ npm run deploy       # build + pages deploy
 - 規則動詞 約 49 語、不規則動詞 50 語（型別リストあり）
 - ビジネス英単語・穴埋め・TOEIC フレーズ・写真描写語彙
 - TOEIC超必須文章穴埋め 20 問、FOR BIZ Unit1・2 穴埋め 30 問（`src/data/toeicSentenceCloze.ts`）
+- HTML/CSS 判別・JavaScript 基礎（`src/data/webBasics.ts`）
 - 文法問題（品詞・語順・接続詞・名詞・前置詞）は `src/data/` 配下に定義
 
 ---

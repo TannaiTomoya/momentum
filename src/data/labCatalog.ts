@@ -3,6 +3,7 @@ import type { GameMode, Progress } from '../engine/types'
 export type LabKind =
   | 'verbs'
   | 'grammar'
+  | 'web'
   | 'if'
   | 'tag'
   | 'pulse'
@@ -26,6 +27,7 @@ export type LabEntry = {
 export const LAB_KIND_LABEL: Record<LabKind, string> = {
   verbs: 'Verbs',
   grammar: '文法',
+  web: 'Web基礎',
   if: '条件',
   tag: 'タグ',
   pulse: 'Pulse',
@@ -37,6 +39,8 @@ export const LAB_KIND_LABEL: Record<LabKind, string> = {
 export const LAB_GROUP_NOTE: Record<string, string> = {
   型別ドリル: '変化パターンごとに分けて定着させる。',
   文法ドリル: 'be動詞+ing なら進行形、名詞の働きなら動名詞。接尾辞で品詞を推測。',
+  Web基礎ドリル:
+    'HTML/CSS の判別と、JavaScript の変数〜DOMまでを選択問題で定着させる。',
   条件と画面: '空きを埋めると、すぐ下の画面が切り替わる。数値は出題ごとに変わる。',
   タグと画面: '空きを埋めると、表・フォーム・カードが切り替わる。中身は出題ごとに変わる。',
   Pulse:
@@ -224,6 +228,24 @@ export const LAB_CATALOG: LabEntry[] = [
     group: '文法ドリル',
     title: '前置詞（セット表現）',
     blurb: 'subscribe to / within / owing to / eligible for など（8問）。',
+    stage: 'other',
+  },
+  {
+    mode: 'html-css-quiz',
+    kind: 'web',
+    group: 'Web基礎ドリル',
+    title: 'HTML/CSS 判別',
+    blurb:
+      'margin / padding / flex / colspan / form などを選択で判別（12問）。',
+    stage: 'other',
+  },
+  {
+    mode: 'js-basics-quiz',
+    kind: 'web',
+    group: 'Web基礎ドリル',
+    title: 'JavaScript 基礎',
+    blurb:
+      'let・const・if・for・配列・関数・DOM・FizzBuzz まで選択で確認（20問）。',
     stage: 'other',
   },
   {

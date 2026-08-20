@@ -78,7 +78,7 @@ export function TitleScreen({ progress, onStart }: Props) {
     <section className="stage">
       <h1 className="brand">MOMENTUM</h1>
       <p className="tagline">
-        Verbs・文法・タグ・Pulse・Lyric。検索して、コンボで加速するラボ。
+        Verbs・文法・Web基礎・タグ・Pulse・Lyric。検索して、コンボで加速するラボ。
       </p>
       <PulseListenBanner />
       <LyricListenBanner />

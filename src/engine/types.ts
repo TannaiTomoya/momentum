@@ -63,6 +63,8 @@ export type GameMode =
   | 'prep-place'
   | 'prep-other'
   | 'prep-set'
+  | 'html-css-quiz'
+  | 'js-basics-quiz'
   | 'if-meaning'
   | 'if-syntax'
   | 'if-build'
