@@ -93,8 +93,17 @@ button {
   margin: 12px 0 0;
   color: var(--muted);
   font-size: 1rem;
-  max-width: 34ch;
+  max-width: 42ch;
   animation: fadeUp 0.7s 0.15s ease both;
+}
+
+.tagline-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  max-width: 42ch;
+  opacity: 0.85;
+  animation: fadeUp 0.7s 0.2s ease both;
 }
 
 .meta-row {
@@ -316,6 +325,95 @@ button {
   margin: 0 0 4px;
   font-size: 1.15rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.difficulty-badge {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.difficulty-beginner {
+  color: #7dd3a8;
+  border-color: rgba(125, 211, 168, 0.45);
+}
+
+.difficulty-intermediate {
+  color: var(--teal);
+  border-color: rgba(46, 196, 182, 0.45);
+}
+
+.difficulty-advanced {
+  color: var(--accent-hot);
+  border-color: rgba(255, 107, 74, 0.45);
+}
+
+.recommend-section {
+  margin-bottom: 28px;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+
+.recommend-list {
+  display: grid;
+  gap: 8px;
+}
+
+.recommend-btn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(14, 48, 56, 0.55);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.recommend-btn:hover:not(:disabled) {
+  border-color: rgba(46, 196, 182, 0.45);
+  background: rgba(14, 48, 56, 0.75);
+}
+
+.recommend-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recommend-order {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--teal);
+  min-width: 1.5rem;
+}
+
+.recommend-body {
+  min-width: 0;
+}
+
+.recommend-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recommend-blurb {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
 }
 
 .mode-btn p {
@@ -342,6 +440,25 @@ button {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.back-menu-btn {
+  align-self: flex-start;
+  margin-bottom: 4px;
+  padding: 4px 10px;
+  border: 1px solid rgba(46, 196, 182, 0.35);
+  border-radius: 999px;
+  background: rgba(7, 26, 31, 0.55);
+  color: var(--teal);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.back-menu-btn:hover {
+  border-color: var(--teal);
+  background: rgba(46, 196, 182, 0.12);
 }
 
 .hud-block.right {
@@ -429,6 +546,23 @@ button {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
+}
+
+.hint-btn {
+  justify-self: center;
+  padding: 8px 16px;
+  border: 1px dashed rgba(46, 196, 182, 0.45);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--teal);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.hint-btn:hover {
+  border-color: var(--teal);
+  background: rgba(46, 196, 182, 0.1);
 }
 
 .prompt-subtitle {

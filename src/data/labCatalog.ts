@@ -1,5 +1,96 @@
 import type { GameMode, Progress } from '../engine/types'
 
+export type LabDifficulty = 'beginner' | 'intermediate' | 'advanced'
+
+export const LAB_DIFFICULTY_LABEL: Record<LabDifficulty, string> = {
+  beginner: '初級',
+  intermediate: '中級',
+  advanced: '上級',
+}
+
+/** モード別難易度（未登録は中級） */
+export const LAB_DIFFICULTY_BY_MODE: Partial<Record<GameMode, LabDifficulty>> = {
+  standard: 'beginner',
+  'vocab-ja-en': 'beginner',
+  'vocab-en-ja': 'beginner',
+  'toeic-en-ja': 'beginner',
+  core: 'intermediate',
+  abb: 'intermediate',
+  aba: 'intermediate',
+  abc: 'intermediate',
+  'ing-form': 'intermediate',
+  'pos-suffix': 'intermediate',
+  'pos-word': 'intermediate',
+  'word-order': 'intermediate',
+  'comp-obj': 'advanced',
+  'phrase-clause': 'advanced',
+  'conj-prep': 'intermediate',
+  'conj-linker': 'intermediate',
+  'conj-part5': 'intermediate',
+  'noun-count': 'intermediate',
+  'noun-plural': 'intermediate',
+  'noun-quant': 'intermediate',
+  'noun-agree': 'intermediate',
+  'prep-time': 'intermediate',
+  'prep-place': 'intermediate',
+  'prep-other': 'intermediate',
+  'prep-set': 'intermediate',
+  cloze: 'intermediate',
+  phrases: 'intermediate',
+  'vocab-initials': 'intermediate',
+  'vocab-initials-en': 'intermediate',
+  'vocab-initials-cloze': 'intermediate',
+  'vocab-initials-phrases': 'intermediate',
+  'toeic-ja-en': 'intermediate',
+  'toeic-cloze': 'intermediate',
+  'toeic-must-cloze': 'advanced',
+  'toeic-biz-cloze': 'advanced',
+  participle: 'advanced',
+  hard: 'advanced',
+  'html-css-quiz': 'intermediate',
+  'js-basics-quiz': 'intermediate',
+  'if-meaning': 'intermediate',
+  'if-syntax': 'advanced',
+  'if-build': 'advanced',
+  'tag-meaning': 'intermediate',
+  'tag-syntax': 'advanced',
+  'tag-build': 'advanced',
+  'pulse-meaning': 'intermediate',
+  'pulse-syntax': 'advanced',
+  'pulse-build': 'advanced',
+  'lyric-meaning': 'intermediate',
+  'lyric-syntax': 'advanced',
+  'lyric-build': 'advanced',
+  'lyric-grammar': 'advanced',
+}
+
+/** おすすめ学習順（小さいほど先） */
+export const LAB_RECOMMEND_ORDER: Partial<Record<GameMode, number>> = {
+  standard: 1,
+  'vocab-ja-en': 2,
+  core: 3,
+  'pos-suffix': 4,
+  'noun-count': 5,
+  'prep-time': 6,
+  'conj-part5': 7,
+  'toeic-en-ja': 8,
+  'toeic-must-cloze': 9,
+  hard: 10,
+}
+
+export function labDifficulty(mode: GameMode): LabDifficulty {
+  return LAB_DIFFICULTY_BY_MODE[mode] ?? 'intermediate'
+}
+
+export function recommendedLabs(): LabEntry[] {
+  return LAB_CATALOG
+    .filter((lab) => LAB_RECOMMEND_ORDER[lab.mode] != null)
+    .sort(
+      (a, b) =>
+        (LAB_RECOMMEND_ORDER[a.mode] ?? 99) - (LAB_RECOMMEND_ORDER[b.mode] ?? 99),
+    )
+}
+
 export type LabKind =
   | 'verbs'
   | 'grammar'
@@ -22,6 +113,8 @@ export type LabEntry = {
   title: string
   blurb: string
   stage: LabStage
+  difficulty?: LabDifficulty
+  recommendOrder?: number
 }
 
 export const LAB_KIND_LABEL: Record<LabKind, string> = {

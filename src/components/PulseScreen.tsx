@@ -25,6 +25,7 @@ type Props = {
   burstKey: number
   tierFlash: string | null
   onAnswer: (code: string) => void
+  onBackToMenu: () => void
 }
 
 export function PulseScreen({
@@ -37,6 +38,7 @@ export function PulseScreen({
   burstKey,
   tierFlash,
   onAnswer,
+  onBackToMenu,
 }: Props) {
   const spec = question.pulse
   const [code, setCode] = useState(spec?.starter ?? '')
@@ -115,6 +117,17 @@ export function PulseScreen({
 
       <div className="hud">
         <div className="hud-block">
+          <button
+            type="button"
+            className="back-menu-btn"
+            onClick={() => {
+              if (window.confirm('途中終了してメニューに戻りますか？')) {
+                onBackToMenu()
+              }
+            }}
+          >
+            メニューへ
+          </button>
           <span className="hud-label">Score</span>
           <span className="hud-value">{momentum.score}</span>
         </div>

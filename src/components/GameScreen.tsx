@@ -1,8 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import type { MomentumState, Question } from '../engine/types'
+import type { MomentumState, Question, QuestionType } from '../engine/types'
 import { ComboBurst } from './ComboBurst'
 import { IfLabPreview } from './IfLabPreview'
 import { TagLabPreview } from './TagLabPreview'
+
+const HIDE_SUBTITLE_UNTIL_ANSWER: QuestionType[] = [
+  'ing-classify',
+  'word-order-classify',
+  'comp-obj-classify',
+  'phrase-clause-classify',
+  'conj-choice',
+  'linker-classify',
+  'quant-choice',
+  'agree-choice',
+]
+
+function shouldHideSubtitleUntilAnswer(question: Question): boolean {
+  if (HIDE_SUBTITLE_UNTIL_ANSWER.includes(question.type)) return true
+  if (question.type === 'pos-classify' && question.subtitle) return true
+  return false
+}
 
 type Props = {
   question: Question
@@ -14,6 +31,7 @@ type Props = {
   burstKey: number
   tierFlash: string | null
   onAnswer: (choice: string) => void
+  onBackToMenu: () => void
 }
 
 function renderPrompt(question: Question): ReactNode {
@@ -45,14 +63,19 @@ export function GameScreen({
   burstKey,
   tierFlash,
   onAnswer,
+  onBackToMenu,
 }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [typed, setTyped] = useState('')
+  const [exampleRevealed, setExampleRevealed] = useState(false)
+  const [subtitleRevealed, setSubtitleRevealed] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setSelected(null)
     setTyped('')
+    setExampleRevealed(false)
+    setSubtitleRevealed(false)
     if (
       question.type === 'initial-type' ||
       question.type === 'if-lab' ||
@@ -92,6 +115,18 @@ export function GameScreen({
     question.type === 'initial-type' ||
     question.type === 'if-lab' ||
     question.type === 'tag-lab'
+  const hideSubtitleUntilAnswer = shouldHideSubtitleUntilAnswer(question)
+  const showSubtitle =
+    question.subtitle &&
+    (!hideSubtitleUntilAnswer || feedback !== 'idle' || subtitleRevealed)
+  const showSubtitleHint =
+    hideSubtitleUntilAnswer &&
+    question.subtitle &&
+    feedback === 'idle' &&
+    !subtitleRevealed
+  const showExampleHint =
+    question.exampleHint &&
+    (exampleRevealed || feedback !== 'idle')
   const hideNoteUntilAnswer =
     question.type === 'pos-classify' ||
     question.type === 'word-order-classify' ||
@@ -110,6 +145,17 @@ export function GameScreen({
     >
       <div className="hud">
         <div className="hud-block">
+          <button
+            type="button"
+            className="back-menu-btn"
+            onClick={() => {
+              if (window.confirm('途中終了してメニューに戻りますか？')) {
+                onBackToMenu()
+              }
+            }}
+          >
+            メニューへ
+          </button>
           <span className="hud-label">Score</span>
           <span className="hud-value">{momentum.score}</span>
         </div>
@@ -138,8 +184,29 @@ export function GameScreen({
             {question.initialHint}
           </p>
         )}
-        {question.subtitle && (
+        {showSubtitleHint && (
+          <button
+            type="button"
+            className="hint-btn"
+            onClick={() => setSubtitleRevealed(true)}
+          >
+            ヒント（訳を見る）
+          </button>
+        )}
+        {showSubtitle && (
           <p className="prompt-subtitle">{question.subtitle}</p>
+        )}
+        {question.exampleHint && feedback === 'idle' && !exampleRevealed && (
+          <button
+            type="button"
+            className="hint-btn"
+            onClick={() => setExampleRevealed(true)}
+          >
+            ヒント（例語を見る）
+          </button>
+        )}
+        {showExampleHint && (
+          <p className="prompt-subtitle">例: {question.exampleHint}</p>
         )}
         {question.ifLab && (
           <IfLabPreview spec={question.ifLab} typed={typed} />

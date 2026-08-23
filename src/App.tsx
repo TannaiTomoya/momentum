@@ -35,6 +35,7 @@ export default function App() {
             burstKey={game.burstKey}
             tierFlash={game.tierFlash}
             onAnswer={game.answer}
+            onBackToMenu={game.backToTitle}
           />
         ) : isLyricMode(game.mode) ? (
           <LyricScreen
@@ -47,6 +48,7 @@ export default function App() {
             burstKey={game.burstKey}
             tierFlash={game.tierFlash}
             onAnswer={game.answer}
+            onBackToMenu={game.backToTitle}
           />
         ) : (
           <GameScreen
@@ -59,6 +61,7 @@ export default function App() {
             burstKey={game.burstKey}
             tierFlash={game.tierFlash}
             onAnswer={game.answer}
+            onBackToMenu={game.backToTitle}
           />
         )
       )}

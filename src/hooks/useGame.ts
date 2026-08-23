@@ -336,10 +336,13 @@ export function useGame() {
   )
 
   const backToTitle = useCallback(() => {
+    endingRef.current = true
     setScreen('title')
     setResult(null)
     setLocked(false)
     lockedRef.current = false
+    setFeedback('idle')
+    setTierFlash(null)
   }, [])
 
   return {

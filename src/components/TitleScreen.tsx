@@ -9,11 +9,16 @@ import { timeLimitForMode } from '../engine/session'
 import type { GameMode, Progress } from '../engine/types'
 import {
   LAB_CATALOG,
+  LAB_DIFFICULTY_LABEL,
   LAB_GROUP_NOTE,
   LAB_KIND_LABEL,
+  LAB_RECOMMEND_ORDER,
   isLabUnlocked,
+  labDifficulty,
   labLock,
   labLockLabel,
+  recommendedLabs,
+  type LabDifficulty,
   type LabEntry,
   type LabKind,
   type LabStage,
@@ -25,6 +30,15 @@ type Props = {
 }
 
 type DurationFilter = 'all' | 'short' | 'long'
+
+function DifficultyBadge({ mode }: { mode: GameMode }) {
+  const level = labDifficulty(mode)
+  return (
+    <span className={`difficulty-badge difficulty-${level}`}>
+      {LAB_DIFFICULTY_LABEL[level]}
+    </span>
+  )
+}
 
 function groupLabs(labs: LabEntry[]): { group: string; items: LabEntry[] }[] {
   const order: string[] = []
@@ -56,12 +70,16 @@ export function TitleScreen({ progress, onStart }: Props) {
   const [unlockedOnly, setUnlockedOnly] = useState(false)
   const [stage, setStage] = useState<LabStage | 'all'>('all')
   const [duration, setDuration] = useState<DurationFilter>('all')
+  const [difficulty, setDifficulty] = useState<LabDifficulty | 'all'>('all')
+
+  const recommended = useMemo(() => recommendedLabs(), [])
 
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase()
     return LAB_CATALOG.filter((lab) => {
       if (kind !== 'all' && lab.kind !== kind) return false
       if (stage !== 'all' && lab.stage !== stage) return false
+      if (difficulty !== 'all' && labDifficulty(lab.mode) !== difficulty) return false
       if (unlockedOnly && !isLabUnlocked(lab.mode, progress)) return false
       const seconds = timeLimitForMode(lab.mode)
       if (duration === 'short' && seconds > 90) return false
@@ -70,7 +88,7 @@ export function TitleScreen({ progress, onStart }: Props) {
       const hay = `${lab.title} ${lab.blurb} ${lab.group} ${LAB_KIND_LABEL[lab.kind]}`.toLowerCase()
       return hay.includes(q)
     })
-  }, [keyword, kind, unlockedOnly, stage, duration, progress])
+  }, [keyword, kind, unlockedOnly, stage, duration, difficulty, progress])
 
   const grouped = groupLabs(filtered)
 
@@ -78,7 +96,10 @@ export function TitleScreen({ progress, onStart }: Props) {
     <section className="stage">
       <h1 className="brand">MOMENTUM</h1>
       <p className="tagline">
-        Verbs・文法・Web基礎・タグ・Pulse・Lyric。検索して、コンボで加速するラボ。
+        TOEIC 中級者向け — 基礎を1周したあとの定着・判別ドリル。動詞・文法・語彙をコンボで加速。
+      </p>
+      <p className="tagline-note">
+        完全初心者向けではありません。初めての方は Momentum Rush や単語テストから。
       </p>
       <PulseListenBanner />
       <LyricListenBanner />
@@ -99,6 +120,41 @@ export function TitleScreen({ progress, onStart }: Props) {
         <span>
           Acc <strong>{accuracy}%</strong>
         </span>
+      </div>
+
+      <div className="recommend-section">
+        <h3 className="mode-group-title">はじめての方へ（おすすめ順）</h3>
+        <p className="mode-group-note">
+          基礎を1周した中級者向け。初級から順に進めると定着しやすいです。
+        </p>
+        <div className="recommend-list">
+          {recommended.map((lab) => {
+            const lock = labLock(lab.mode)
+            const unlocked = isLabUnlocked(lab.mode, progress)
+            const order = LAB_RECOMMEND_ORDER[lab.mode]
+            return (
+              <button
+                key={lab.mode}
+                className="recommend-btn"
+                type="button"
+                disabled={!unlocked}
+                onClick={() => onStart(lab.mode)}
+              >
+                <span className="recommend-order">{order}</span>
+                <span className="recommend-body">
+                  <span className="recommend-title-row">
+                    <strong>{lab.title}</strong>
+                    <DifficultyBadge mode={lab.mode} />
+                  </span>
+                  <span className="recommend-blurb">{lab.blurb}</span>
+                </span>
+                {!unlocked && lock && (
+                  <span className="lock">{labLockLabel(lock)}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="lab-search">
@@ -149,6 +205,22 @@ export function TitleScreen({ progress, onStart }: Props) {
             <option value="build">Build</option>
             <option value="grammar">Grammar</option>
             <option value="toeic">TOEIC対策</option>
+          </select>
+        </label>
+        <label className="lab-detail-field">
+          難易度
+          <select
+            value={difficulty}
+            onChange={(event) =>
+              setDifficulty(event.target.value as LabDifficulty | 'all')
+            }
+          >
+            <option value="all">すべて</option>
+            {(Object.keys(LAB_DIFFICULTY_LABEL) as LabDifficulty[]).map((key) => (
+              <option key={key} value={key}>
+                {LAB_DIFFICULTY_LABEL[key]}
+              </option>
+            ))}
           </select>
         </label>
         <label className="lab-detail-field">
@@ -223,7 +295,10 @@ export function TitleScreen({ progress, onStart }: Props) {
                       disabled={!unlocked}
                       onClick={() => onStart(lab.mode)}
                     >
-                      <h2>{lab.title}</h2>
+                      <h2>
+                        {lab.title}
+                        <DifficultyBadge mode={lab.mode} />
+                      </h2>
                       <p>{lab.blurb}</p>
                       {!unlocked && lock && (
                         <div className="lock">{labLockLabel(lock)}</div>
@@ -252,7 +327,10 @@ export function TitleScreen({ progress, onStart }: Props) {
                       disabled={!unlocked}
                       onClick={() => onStart(lab.mode)}
                     >
-                      <h2>{lab.title}</h2>
+                      <h2>
+                        {lab.title}
+                        <DifficultyBadge mode={lab.mode} />
+                      </h2>
                       <p>{lab.blurb}</p>
                       {!unlocked && lock && (
                         <div className="lock">{labLockLabel(lock)}</div>

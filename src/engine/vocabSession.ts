@@ -178,7 +178,10 @@ function makeQuestion(
   acceptAnswers: string[],
   choices: string[],
   isRecovery = false,
-  extra?: Pick<Question, 'emphasis' | 'subtitle' | 'initialHint' | 'note'>,
+  extra?: Pick<
+    Question,
+    'emphasis' | 'subtitle' | 'exampleHint' | 'initialHint' | 'note'
+  >,
 ): Question {
   return {
     id: `${itemId}-${type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -271,7 +274,7 @@ function suffixPosQuestion(card: SuffixCard, isRecovery = false): Question {
     shuffle(POS_CHOICES),
     isRecovery,
     {
-      subtitle: `例: ${card.examples}`,
+      exampleHint: card.examples,
       note: card.note,
     },
   )

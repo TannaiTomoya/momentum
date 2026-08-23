@@ -227,6 +227,8 @@ export type Question = {
   emphasis?: string
   /** 補助訳など */
   subtitle?: string
+  /** 接尾辞モードなど：ボタンで開示する例語 */
+  exampleHint?: string
   /** イニシャル穴埋め表示（f______） */
   initialHint?: string
   /** 注意書き */
