@@ -106,6 +106,13 @@ button {
   animation: fadeUp 0.7s 0.2s ease both;
 }
 
+.difficulty-legend {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .meta-row {
   display: flex;
   flex-wrap: wrap;

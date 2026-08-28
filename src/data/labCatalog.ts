@@ -2,11 +2,22 @@ import type { GameMode, Progress } from '../engine/types'
 
 export type LabDifficulty = 'beginner' | 'intermediate' | 'advanced'
 
+/** バッジ用の短いラベル */
 export const LAB_DIFFICULTY_LABEL: Record<LabDifficulty, string> = {
   beginner: '初級',
   intermediate: '中級',
   advanced: '上級',
 }
+
+/** フィルタ・凡例用（IIBC Proficiency Scale 準拠） */
+export const LAB_DIFFICULTY_SCORE_LABEL: Record<LabDifficulty, string> = {
+  beginner: '初級（〜470点）',
+  intermediate: '中級（600点目標）',
+  advanced: '上級（730点目標）',
+}
+
+export const LAB_DIFFICULTY_LEGEND =
+  '初級=〜470点 / 中級=600点目標 / 上級=730点目標（IIBC区分準拠）'
 
 /** モード別難易度（未登録は中級） */
 export const LAB_DIFFICULTY_BY_MODE: Partial<Record<GameMode, LabDifficulty>> = {

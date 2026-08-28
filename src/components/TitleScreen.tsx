@@ -10,6 +10,8 @@ import type { GameMode, Progress } from '../engine/types'
 import {
   LAB_CATALOG,
   LAB_DIFFICULTY_LABEL,
+  LAB_DIFFICULTY_LEGEND,
+  LAB_DIFFICULTY_SCORE_LABEL,
   LAB_GROUP_NOTE,
   LAB_KIND_LABEL,
   LAB_RECOMMEND_ORDER,
@@ -96,10 +98,10 @@ export function TitleScreen({ progress, onStart }: Props) {
     <section className="stage">
       <h1 className="brand">MOMENTUM</h1>
       <p className="tagline">
-        TOEIC 中級者向け — 基礎を1周したあとの定着・判別ドリル。動詞・文法・語彙をコンボで加速。
+        TOEIC 600点目標の方向け — 730点対策にも。基礎を1周したあとの定着・判別ドリル。
       </p>
       <p className="tagline-note">
-        完全初心者向けではありません。初めての方は Momentum Rush や単語テストから。
+        ※ 430点前後の方にはやや難しめです。まずは Momentum Rush・単語テストから。
       </p>
       <PulseListenBanner />
       <LyricListenBanner />
@@ -125,8 +127,9 @@ export function TitleScreen({ progress, onStart }: Props) {
       <div className="recommend-section">
         <h3 className="mode-group-title">はじめての方へ（おすすめ順）</h3>
         <p className="mode-group-note">
-          基礎を1周した中級者向け。初級から順に進めると定着しやすいです。
+          600点を目標にする方向け。初級から順に進めると定着しやすいです（730点対策にも有効）。
         </p>
+        <p className="difficulty-legend">{LAB_DIFFICULTY_LEGEND}</p>
         <div className="recommend-list">
           {recommended.map((lab) => {
             const lock = labLock(lab.mode)
@@ -216,11 +219,13 @@ export function TitleScreen({ progress, onStart }: Props) {
             }
           >
             <option value="all">すべて</option>
-            {(Object.keys(LAB_DIFFICULTY_LABEL) as LabDifficulty[]).map((key) => (
+            {(Object.keys(LAB_DIFFICULTY_SCORE_LABEL) as LabDifficulty[]).map(
+              (key) => (
               <option key={key} value={key}>
-                {LAB_DIFFICULTY_LABEL[key]}
+                {LAB_DIFFICULTY_SCORE_LABEL[key]}
               </option>
-            ))}
+            ),
+            )}
           </select>
         </label>
         <label className="lab-detail-field">
